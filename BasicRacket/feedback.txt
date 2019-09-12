@@ -1,0 +1,16 @@
+        Correct output:
+41
+1.047
+1
+-0.305
+
+        Your output:
+41
+1.047
+1
+-0.305
+
+        Failed tests:
+
+        Grade:
+4 out of 4
