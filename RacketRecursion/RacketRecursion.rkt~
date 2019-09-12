@@ -39,7 +39,7 @@
 
 ;-------------------------------------------- convertFC temps DONE
 (define (convertFC-helper temps)
-   (if (empty? temps) empty (cons (/ (* (- (first temps) 32) 5) 9) (convertFC-helper (rest temps))))
+  (if (empty? temps) empty (cons (+ (/ (* (first temps) 9) 5) 32) (convertFC-helper (rest temps))))
   )
 
 (define (convertFC temps)
