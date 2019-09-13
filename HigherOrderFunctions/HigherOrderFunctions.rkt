@@ -1,6 +1,12 @@
 #lang racket
 
 
+;-------------------------------------------- convertFC temps DONE
+(define (convertFC temps)
+  (map (lambda (x)
+         (/ (* (- x 32) 5) 9)) temps)
+  )
+
 ;-------------------------------------------- Check temps DONE
 (define (check-temps temps low high)
     (andmap (lambda (lst)
@@ -27,18 +33,10 @@
          (append (list y) (list x))) lst lst)
   )
 
-;-------------------------------------------- Average lst ###TODO####
+;-------------------------------------------- Average lst DONE
 (define (average lst)
-  (/ (foldr + 0 lst) (length lst))
-  )
-
-;-------------------------------------------- convertFC temps ###TODO####
-(define (convertFC-helper temps)
-   (if (empty? temps) empty (cons (/ (* (- (first temps) 32) 5) 9) (convertFC-helper (rest temps))))
-  )
-
-(define (convertFC temps)
-  (if (empty? temps) empty (convertFC-helper temps))
+  (if (empty? lst) empty
+  (/ (foldr + 0 lst) (length lst)))
   )
 
 ;-------------------------------------------- eliminate-larger lst ###TODO####
@@ -56,24 +54,16 @@
   (if (empty? lst) empty (eliminate-larger-helper lst))
   )
 
-;-------------------------------------------- get-nth lst n ###TODO####
-(define (get-nth-helper lst n index)
-  [cond ((empty? lst) -1)
-        ((eq? n index) (first lst))
-        (else (get-nth-helper (rest lst) n (+ index 1)))]
+(define (elim-larger lst)
+  (filter-map (lambda (x y)
+            (is-smallest(y x)) lst lst)) 
   )
 
-(define (get-nth lst n)
-  (get-nth-helper lst n 0)
-  )
+;(elim-larger (list 1 3 2))
 
-;-------------------------------------------- find-item lst target ###TODO####
-(define (find-item-helper lst n index)
-  [cond ((empty? lst) -1)
-        ((eq? (first lst) n) index)
-        (else (find-item-helper (rest lst) n (+ index 1)))]
-  )
+;-------------------------------- curry2 func DONE
 
-(define (find-item lst n)
-  (find-item-helper lst n 0)
-  )
+(define (curry2 func)
+  (lambda (arg1)
+    (lambda (arg2)
+      (func arg1 arg2))))
