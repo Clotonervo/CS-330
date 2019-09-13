@@ -16,3 +16,19 @@
 
 
 
+; ------- Basic Decorator
+
+(define (add x y)
+  (+ x y))
+
+(define (debug f label)
+  (lambda (x y)
+    (printf "Called ~s: ~a ~a ~n" label x y)
+    (f x y)))
+
+(define add-d (debug add "add"))
+
+(add-d 3 4)
+
+
+
