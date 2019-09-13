@@ -10,45 +10,26 @@
 
 ;-------------------------------------------- Check temps1 DONE
 (define (check-temps1 temps)
-  (check-temps temps 5 95)
+  (if (empty? temps) true
+  (check-temps temps 5 95))
   )
 
-;-------------------------------------------- Convert digits ###TODO####
-(define (digit-helper digits power)
-  (if (empty? digits) 0 (+ (digit-helper (rest digits) (+ power 1)) (* (first digits) (expt 10 power))))
-  )
-
+;-------------------------------------------- Convert digits DONE
 (define (convert digits)
-  (foldr + 0 digits)
-  
+  (if (empty? digits) empty
+  (foldr (lambda (x y)
+           (+ x (* y 10))) 0 digits))
   )
 
-(define (thing digits)
-  (foldr
-   (lambda (a b result) (+ a (* 10 result)))
-   0
-   digits
-   digits))
-
-(displayln "Convert digits tests")
-(thing (list 1 2 3))
-(convert (list 1 2 3 4 5))
-;-------------------------------------------- Duple lst ###TODO####
-(define (duple-helper lst)
-    (if (empty? (rest lst)) (cons (list (first lst) (first lst)) empty) (cons (list (first lst) (first lst)) (duple (rest lst))))
-  )
-
+;-------------------------------------------- Duple lst DONE
 (define (duple lst)
-  (if (empty? lst) empty (duple-helper lst))
+  (map (lambda (x y)
+         (append (list y) (list x))) lst lst)
   )
 
 ;-------------------------------------------- Average lst ###TODO####
-(define (list-sum lst)
-  (if (empty? lst) 0 (+ (first lst) (list-sum (rest lst))))
-  )
-
 (define (average lst)
-  (if (empty? lst) empty (/ (list-sum lst) (length lst)))
+  (/ (foldr + 0 lst) (length lst))
   )
 
 ;-------------------------------------------- convertFC temps ###TODO####
