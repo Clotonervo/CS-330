@@ -46,7 +46,7 @@
         [else #f]]
   )
 
-(define (elim-larger lst)
+(define (eliminate-larger lst)
    (foldr (lambda (x y)
             (if (is-smallest x y) (cons x y) y)) (list (first (reverse lst))) lst)
   )
