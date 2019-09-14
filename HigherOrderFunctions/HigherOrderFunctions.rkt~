@@ -39,17 +39,27 @@
   (/ (foldr + 0 lst) (length lst)))
   )
 
-;-------------------------------------------- eliminate-larger lst DONE
-(define (is-smallest val lst)
+;-------------------------------------------- eliminate-larger lst ###TODO####
+(define (is-smallest lst val)
   [cond [(empty? lst) #t]
-        [(< val (first lst)) #t]
+        [(> (first lst) val) (is-smallest (rest lst) val) ]
         [else #f]]
   )
 
-(define (elim-larger lst)
-   (foldr (lambda (x y)
-            (if (is-smallest x y) (cons x y) y)) (list (first (reverse lst))) lst)
+(define (eliminate-larger-helper lst)
+  (if (is-smallest (rest lst) (first lst)) (cons (first lst) (eliminate-larger (rest lst))) (eliminate-larger (rest lst)))
   )
+
+(define (eliminate-larger lst)
+  (if (empty? lst) empty (eliminate-larger-helper lst))
+  )
+
+(define (elim-larger lst)
+  (filter-map (lambda (x y)
+            (is-smallest(y x)) lst lst)) 
+  )
+
+;(elim-larger (list 1 3 2))
 
 ;-------------------------------- curry2 func DONE
 
