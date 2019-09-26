@@ -2,7 +2,7 @@ Interpretors
 
 using Revise
 
-push! (LOAD_PATH, pwd())
+push!(LOAD_PATH, pwd())
 
 using Lexer
 Lexer.lex("42")
@@ -11,3 +11,9 @@ Lexer.lex("42")
 AD::= ( OP AE AE)
 	| num
 OP::= + | -
+
+
+function calc( ast::BinopNode )
+	if ( ast == :+ )
+		return calc( ast.lhs ) + calc( ast.rhs )
+end

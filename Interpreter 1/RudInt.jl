@@ -3,7 +3,7 @@
 # Base interpreter with numbers, plus, and minus
 #
 
-module CI0
+module RudInt
 
 push!(LOAD_PATH, pwd())
 
@@ -23,14 +23,9 @@ struct NumNode <: AE
     n::Real
 end
 
-# <AE> ::= (+ <AE> <AE>)
-struct PlusNode <: AE
-    lhs::AE
-    rhs::AE
-end
-
-# <AE> ::= (- <AE> <AE>)
-struct MinusNode <: AE
+# <AE> ::= (x <AE> <AE>)
+struct BinopNode <: AE
+	op::Function
     lhs::AE
     rhs::AE
 end
@@ -46,11 +41,9 @@ end
 function parse( expr::Array{Any} )
 
     if expr[1] == :+
-        return PlusNode( parse( expr[2] ), parse( expr[3] ) )
-
-    elseif expr[1] == :-
-        return MinusNode( parse( expr[2] ), parse( expr[3] ) )
-
+        return BinopNode( +, parse( expr[2] ), parse( expr[3] ) )
+	elseif expr[1] == :*
+		return BinopNode( *, parse( expr[2] ), parse( expr[3] ))
     end
 
     throw(LispError("Unknown operator!"))
@@ -68,13 +61,14 @@ function calc( ast::NumNode )
     return ast.n
 end
 
-function calc( ast::PlusNode )
-    return calc( ast.lhs ) + calc( ast.rhs )
+function calc( ast::BinopNode )
+	if ast.op == +
+		return calc( ast.lhs ) + calc( ast.rhs )
+	elseif ast.op == *
+		return calc( ast.lhs ) * calc( ast.rhs )
+	end
 end
 
-function calc( ast::MinusNode )
-    return calc( ast.lhs ) - calc( ast.rhs )
-end
 
 #
 # ==================================================
