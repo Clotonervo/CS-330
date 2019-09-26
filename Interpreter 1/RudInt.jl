@@ -30,19 +30,48 @@ struct BinopNode <: AE
     rhs::AE
 end
 
-
-function Dict(op::AE)
-	if expr[1] == :+
-		return +
-	elseif expr[1] == :-
-		return -
-	elseif expr[1] == :*
-		return *
-	elseif expr[1] == :/
-		return /
-	elseif expr[1] == :mod
-		return mod
+# <AE> ::= (x <AE> <AE>)
+struct UnaryNode <: AE
+	op::Function
+	num::AE
 end
+
+
+function Dict(op::Symbol)
+	if op == :+
+		return +
+	elseif op == :-
+		return -
+	elseif op == :*
+		return *
+	elseif op == :/
+		return /
+	elseif op == :mod
+		return mod
+	elseif op == :collatz
+		return collatz
+	end
+end
+
+#
+# ==================================================
+#
+
+function collatz( n::Real )
+  return collatz_helper( n, 0 )
+end
+
+function collatz_helper( n::Real, num_iters::Int )
+  if n == 1
+    return num_iters
+  end
+  if mod(n,2)==0
+    return collatz_helper( n/2, num_iters+1 )
+  else
+    return collatz_helper( 3*n+1, num_iters+1 )
+  end
+end
+
 #
 # ==================================================
 #
@@ -52,20 +81,29 @@ function parse( expr::Number )
 end
 
 function parse( expr::Array{Any} )
+	if length( expr ) > 3
+        throw( LispError( "Too many arguments!" ) )
+	end
 
-    if expr[1] == :+
+	operator = Dict( expr[1] )
+    if operator == +
         return BinopNode( +, parse( expr[2] ), parse( expr[3] ) )
-	elseif expr[1] == :-
-		return BinopNode( -, parse( expr[2] ), parse( expr[3] ) )
-	elseif expr[1] == :*
+	elseif operator == -
+		if length( expr ) == 2
+			return UnaryNode( -, parse( expr[2] ) )
+		elseif length( expr ) == 3
+			return BinopNode( -, parse( expr[2] ), parse( expr[3] ) )
+		end
+	elseif operator == *
 		return BinopNode( *, parse( expr[2] ), parse( expr[3] ) )
-	elseif expr[1] == :/
+	elseif operator == /
 		return BinopNode( /, parse( expr[2] ), parse( expr[3] ) )
-	elseif expr[1] == :mod
+	elseif operator == mod
 		return BinopNode( mod, parse( expr[2] ), parse( expr[3] ) )
+	elseif operator == collatz
+		return UnaryNode( collatz, parse( expr[2] ) )
     end
-
-    throw(LispError("Unknown operator!"))
+    throw( LispError("Unknown operator!") )
 end
 
 function parse( expr::Any )
@@ -88,11 +126,27 @@ function calc( ast::BinopNode )
 	elseif ast.op == *
 		return calc( ast.lhs ) * calc( ast.rhs )
 	elseif ast.op == /
-		return calc( ast.lhs ) / calc( ast.rhs )
+		if (ast.rhs == 0)
+			throw( LispError("Undefined expression!") )
+		else
+			return calc( ast.lhs ) / calc( ast.rhs )
+		end
 	elseif ast.op == mod
 		return mod( calc( ast.lhs ), calc( ast.rhs ) )
 	end
 end
+
+function calc( ast::UnaryNode)
+	if ast.op == collatz
+		if ast.num < 0
+			throw( LispError("Tried to collatz with a negative number!") )
+		end
+		return collatz( ast.num )
+	elseif ast.op == -
+		return 0 - calc( ast.num )
+	end
+end
+
 
 
 #
