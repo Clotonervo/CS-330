@@ -30,6 +30,19 @@ struct BinopNode <: AE
     rhs::AE
 end
 
+
+function Dict(op::AE)
+	if expr[1] == :+
+		return +
+	elseif expr[1] == :-
+		return -
+	elseif expr[1] == :*
+		return *
+	elseif expr[1] == :/
+		return /
+	elseif expr[1] == :mod
+		return mod
+end
 #
 # ==================================================
 #
@@ -42,8 +55,14 @@ function parse( expr::Array{Any} )
 
     if expr[1] == :+
         return BinopNode( +, parse( expr[2] ), parse( expr[3] ) )
+	elseif expr[1] == :-
+		return BinopNode( -, parse( expr[2] ), parse( expr[3] ) )
 	elseif expr[1] == :*
-		return BinopNode( *, parse( expr[2] ), parse( expr[3] ))
+		return BinopNode( *, parse( expr[2] ), parse( expr[3] ) )
+	elseif expr[1] == :/
+		return BinopNode( /, parse( expr[2] ), parse( expr[3] ) )
+	elseif expr[1] == :mod
+		return BinopNode( mod, parse( expr[2] ), parse( expr[3] ) )
     end
 
     throw(LispError("Unknown operator!"))
@@ -64,8 +83,14 @@ end
 function calc( ast::BinopNode )
 	if ast.op == +
 		return calc( ast.lhs ) + calc( ast.rhs )
+	elseif ast.op == -
+		return calc( ast.lhs ) - calc( ast.rhs )
 	elseif ast.op == *
 		return calc( ast.lhs ) * calc( ast.rhs )
+	elseif ast.op == /
+		return calc( ast.lhs ) / calc( ast.rhs )
+	elseif ast.op == mod
+		return mod( calc( ast.lhs ), calc( ast.rhs ) )
 	end
 end
 
