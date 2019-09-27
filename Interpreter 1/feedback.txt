@@ -1,0 +1,25 @@
+        Correct output:
+Main.RudInt.BinopNode(+, Main.RudInt.NumNode(1), Main.RudInt.NumNode(2))
+Main.RudInt.BinopNode(-, Main.RudInt.NumNode(1), Main.RudInt.NumNode(2))
+Error
+Error
+-1
+2
+Error
+Error
+
+        Your output:
+Main.RudInt.BinopNode(+, Main.RudInt.NumNode(1), Main.RudInt.NumNode(2))
+Main.RudInt.BinopNode(-, Main.RudInt.NumNode(1), Main.RudInt.NumNode(2))
+Error
+Error
+-1
+2
+Error
+Inf
+
+        Failed tests:
+8. 1 point. calc (/ 1 0)
+
+        Grade:
+7 out of 8

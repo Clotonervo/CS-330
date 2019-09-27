@@ -101,7 +101,11 @@ function parse( expr::Array{Any} )
 	elseif operator == mod
 		return BinopNode( mod, parse( expr[2] ), parse( expr[3] ) )
 	elseif operator == collatz
-		return UnaryNode( collatz, parse( expr[2] ) )
+		if length( expr ) != 2
+			throw( LispError( "Too many arguments for collatz!"))
+		else
+			return UnaryNode( collatz, parse( expr[2] ) )
+		end
     end
     throw( LispError("Unknown operator!") )
 end
@@ -140,8 +144,9 @@ function calc( ast::UnaryNode)
 	if ast.op == collatz
 		if ast.num < 0
 			throw( LispError("Tried to collatz with a negative number!") )
+		else
+			return collatz( ast.num )
 		end
-		return collatz( ast.num )
 	elseif ast.op == -
 		return 0 - calc( ast.num )
 	end
