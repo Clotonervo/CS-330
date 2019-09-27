@@ -130,8 +130,8 @@ function calc( ast::BinopNode )
 	elseif ast.op == *
 		return calc( ast.lhs ) * calc( ast.rhs )
 	elseif ast.op == /
-		if (ast.rhs == 0)
-			throw( LispError("Undefined expression!") )
+		if calc( ast.rhs ) == 0
+			throw( LispError("Undefined: can't divide by 0!") )
 		else
 			return calc( ast.lhs ) / calc( ast.rhs )
 		end
@@ -142,7 +142,7 @@ end
 
 function calc( ast::UnaryNode)
 	if ast.op == collatz
-		if ast.num < 0
+		if calc( ast.num ) < 0
 			throw( LispError("Tried to collatz with a negative number!") )
 		else
 			return collatz( ast.num )

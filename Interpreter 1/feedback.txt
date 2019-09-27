@@ -16,10 +16,9 @@ Error
 -1
 2
 Error
-Inf
+Error
 
         Failed tests:
-8. 1 point. calc (/ 1 0)
 
         Grade:
-7 out of 8
+8 out of 8
