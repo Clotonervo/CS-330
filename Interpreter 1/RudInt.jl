@@ -125,20 +125,14 @@ function calc( ast::NumNode )
 end
 
 function calc( ast::BinopNode )
-	if ast.op == +
-		return calc( ast.lhs ) + calc( ast.rhs )
-	elseif ast.op == -
-		return calc( ast.lhs ) - calc( ast.rhs )
-	elseif ast.op == *
-		return calc( ast.lhs ) * calc( ast.rhs )
-	elseif ast.op == /
+	if ast.op == /
 		if calc( ast.rhs ) == 0
 			throw( LispError("Undefined: can't divide by 0!") )
 		else
-			return calc( ast.lhs ) / calc( ast.rhs )
+			return ast.op( calc( ast.lhs ), calc( ast.rhs ) )
 		end
-	elseif ast.op == mod
-		return mod( calc( ast.lhs ), calc( ast.rhs ) )
+	else
+		return ast.op( calc( ast.lhs ), calc( ast.rhs ) )
 	end
 end
 
@@ -149,8 +143,8 @@ function calc( ast::UnaryNode)
 		else
 			return collatz( calc( ast.num ) )
 		end
-	elseif ast.op == -
-		return 0 - calc( ast.num )
+	else
+		return ast.op( calc(ast.num) )
 	end
 end
 
