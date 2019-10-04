@@ -173,6 +173,9 @@ end
 function calc( ast::WithNode, env::Environment )
     binding_val = calc( ast.binding_expr, env )
     ext_env = ExtendedEnv( ast.sym, binding_val, env )
+    if (typeof(binding_val)) == ClosureVal
+        binding_val.env = ext_env
+    end
     return calc( ast.body, ext_env )
 end
 
