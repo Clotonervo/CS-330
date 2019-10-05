@@ -24,16 +24,17 @@ struct NumNode <: AE
     n::Real
 end
 
-# <AE> ::= (+ <AE> <AE>)
-struct PlusNode <: AE
+# <AE> ::= (x <AE> <AE>)
+struct BinopNode <: AE
+	op::Function
     lhs::AE
     rhs::AE
 end
 
-# <AE> ::= (- <AE> <AE>)
-struct MinusNode <: AE
-    lhs::AE
-    rhs::AE
+# <AE> ::= (x <AE>)
+struct UnaryNode <: AE
+	op::Function
+	num::AE
 end
 
 # <AE> ::= (if0 <AE> <AE> <AE>)
@@ -65,6 +66,51 @@ end
 struct FuncAppNode <: AE
     fun_expr::AE
     arg_expr::AE
+end
+
+#
+# ==================================================
+#
+
+function Dict(op::Symbol)
+	if op == :+
+		return +
+	elseif op == :-
+		return -
+	elseif op == :*
+		return *
+	elseif op == :/
+		return /
+	elseif op == :mod
+		return mod
+	elseif op == :collatz
+		return collatz
+	elseif op == :with
+		return :with
+	elseif op == :lambda
+		return :lambda
+	elseif op == :if0
+		return :if0
+	end
+end
+
+#
+# ==================================================
+#
+
+function collatz( n::Real )
+  return collatz_helper( n, 0 )
+end
+
+function collatz_helper( n::Real, num_iters::Int )
+  if n == 1
+    return num_iters
+  end
+  if mod(n,2)==0
+    return collatz_helper( n/2, num_iters+1 )
+  else
+    return collatz_helper( 3*n+1, num_iters+1 )
+  end
 end
 
 #
@@ -113,28 +159,60 @@ function parse( expr::Symbol )
 end
 
 function parse( expr::Array{Any} )
+	if length( expr ) <= 1
+		throw( LispError( "Not part of the grammar!") )
+	end
+	operator = Dict( expr[1] )
 
-    if expr[1] == :+
-        return PlusNode( parse( expr[2] ), parse( expr[3] ) )
+	if length( expr ) == 2 #------------------- Unary
 
-    elseif expr[1] == :-
-        return MinusNode( parse( expr[2] ), parse( expr[3] ) )
+		if operator == collatz
+			return UnaryNode( collatz, parse( expr[2] ) )
+		elseif operator == -
+			return UnaryNode( -, parse( expr[2] ) )
+		else
+			throw( LispError( "Invalid number of arguments!") )
+		end
 
-    elseif expr[1] == :if0
-        return If0Node( parse(expr[2]), parse(expr[3]) , parse(expr[4]) )
+	elseif length( expr ) == 3 #------------------- Binop
 
-    elseif expr[1] == :with
-        return WithNode( expr[2], parse(expr[3]), parse(expr[4]) )
+	    if operator == +
+	        return BinopNode( +, parse( expr[2] ), parse( expr[3] ) )
+		elseif operator == -
+			return BinopNode( -, parse( expr[2] ), parse( expr[3] ) )
+		elseif operator == *
+			return BinopNode( *, parse( expr[2] ), parse( expr[3] ) )
+		elseif operator == /
+			return BinopNode( /, parse( expr[2] ), parse( expr[3] ) )
+		elseif operator == mod
+			return BinopNode( mod, parse( expr[2] ), parse( expr[3] ) )
+		elseif operator == :with
+			return WithNode( expr[1], parse( expr[3]) )
+		else
+			throw(LispError("Not part of the grammar for Binary operations!"))
+		end
 
-    elseif expr[1] == :lambda
-        return FuncDefNode( expr[2], parse(expr[3]) )
+	elseif length( expr ) == 4  #------------------- New Ops
 
-    else
-        return FuncAppNode( parse(expr[1]), parse(expr[2]) )
+		if operator == :if0
+			return If0Node( parse( expr[2] ), parse( expr[3] ) , parse( expr[4] ) )
+		elseif operator == :with
+			return WithNode( expr[2], parse( expr[3] ), parse( expr[4] ) )
+		else
+			throw(LispError("Not part of the grammar!"))
+		end
 
-    end
+	else #------------------- List of Ops
 
-    throw(LispError("Unknown operator!"))
+		if operator == :lambda
+			return FuncDefNode( expr[2], parse( expr[3] ) )
+		elseif operator == :with
+			return WithNode( expr[2], parse( expr[3] ), parse( expr[4] ) )
+		else
+			return FuncAppNode( parse( expr[1] ), parse( expr[2] ) )
+		end
+	    throw(LispError("Unknown operator!"))
+	end
 end
 
 function parse( expr::Any )
@@ -149,16 +227,29 @@ function calc( ast::NumNode, env::Environment )
     return NumVal( ast.n )
 end
 
-function calc( ast::PlusNode, env::Environment )
-    lhs = calc( ast.lhs, env )
-    rhs = calc( ast.rhs, env )
-    return  NumVal( lhs.n + rhs.n )
+
+function calc( ast::BinopNode, env::Environment )
+	if ast.op == /
+		if calc( ast.rhs, env ).n == 0
+			throw( LispError("Undefined: can't divide by 0!") )
+		else
+			return ast.op( calc( ast.lhs, env ).n, calc( ast.rhs, env ).n )
+		end
+	else
+		return ast.op( calc( ast.lhs, env ).n, calc( ast.rhs, env ).n )
+	end
 end
 
-function calc( ast::MinusNode, env::Environment )
-    lhs = calc( ast.lhs, env )
-    rhs = calc( ast.rhs, env )
-    return  NumVal( lhs.n - rhs.n )
+function calc( ast::UnaryNode, env::Environment)
+	if ast.op == collatz
+		if calc( ast.num, env ).n < 0
+			throw( LispError("Tried to collatz with a negative number!") )
+		else
+			return collatz( calc( ast.num, env ).n )
+		end
+	else
+		return ast.op( calc( ast.num, env ).n )
+	end
 end
 
 function calc( ast::If0Node, env::Environment )
