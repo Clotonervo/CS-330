@@ -216,11 +216,8 @@ function parse( expr::Array{Any} )
 			throw( LispError("Invalid number of arguments for lambda!"))
 		end
 	else
-		array = Array{AE, 1}()
-		for i = 2:length( expr )
-			push!(array, parse( expr[i] ) )
-		end
-		return FuncAppNode( parse( expr[1] ), array )
+
+		return FuncAppNode( parse( expr[1] ), lambdaParser( expr ) )
 	end
 end
 
@@ -251,6 +248,15 @@ function lambdaHelper( expr::Array{Any})
 	end
 	return result
 end
+
+function lambdaParser( expr::Array{Any} )
+	array = Array{AE, 1}()
+	for i = 2:length( expr )
+		push!(array, parse( expr[i] ) )
+	end
+	return array
+end
+
 
 #
 # =================== collatz helper
@@ -283,6 +289,7 @@ end
 
 
 function calc( ast::BinopNode, env::Environment )
+
 	if ast.op == /
 		if calc( ast.rhs, env ).n == 0
 			throw( LispError("Undefined: can't divide by 0!") )
