@@ -287,6 +287,9 @@ function calc( ast::NumNode, env::Environment )
     return NumVal( ast.n )
 end
 
+function calc( ast::ManyNums, env::Environment )
+	throw( LispError( "Cannot calculate a list of numbers!") )
+end
 
 function calc( ast::BinopNode, env::Environment )
 
