@@ -170,7 +170,6 @@ function parse( expr::Array{Any} )
 	end
 
 	if (typeof(expr[1]) == Int64)
-
 		list = Array{ NumNode,1 }()
 		for i = 1:length( expr )
 			push!(list, parse(expr[i]))
@@ -216,7 +215,6 @@ function parse( expr::Array{Any} )
 			throw( LispError("Invalid number of arguments for lambda!"))
 		end
 	else
-
 		return FuncAppNode( parse( expr[1] ), lambdaParser( expr ) )
 	end
 end
@@ -292,7 +290,9 @@ function calc( ast::ManyNums, env::Environment )
 end
 
 function calc( ast::BinopNode, env::Environment )
-	if ((typeof(calc(ast.lhs)) != NumVal) || (typeof(calc(ast.rhs)) != NumVal))
+
+
+	if ((typeof(calc(ast.lhs, env)) != NumVal) || (typeof(calc(ast.rhs, env)) != NumVal))
 		throw( LispError("Invalid arguments for calculating a binary operator!"))
 	end
 
@@ -308,6 +308,10 @@ function calc( ast::BinopNode, env::Environment )
 end
 
 function calc( ast::UnaryNode, env::Environment)
+	if typeof(calc(ast.num)) != NumVal
+		throw( LispError("Invalid arguments for calculating a unary operator!"))
+	end
+
 	if ast.op == collatz
 		if calc( ast.num, env ).n < 0
 			throw( LispError("Tried to collatz with a negative number!") )
@@ -362,7 +366,7 @@ function calc( ast::FuncAppNode, env::Environment )
 	    throw(LispError("Mismatch in arguments when calculating closure val!"))
 	  end
 
-	for i=1:length(ast.arg_expr)
+	for i = 1:length(ast.arg_expr)
 	    actual_parameter = calc( ast.arg_expr[i], env )
 	    ext_env = ExtendedEnv(  closure_val.formal[i],
 								actual_parameter,
