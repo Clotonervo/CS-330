@@ -227,7 +227,8 @@ function withHelper( expr::Array{Any})
 	result = Array{WithExpr, 1}()
 	for i = 1:length(expr)
 		if length( expr[i] ) == 2
-  			push!(result, WithExpr( parse( expr[i][1] ) , parse( expr[i][2] ) ) )
+			repeatVariables(result, expr[i][1] )
+			push!(result, WithExpr( parse( expr[i][1] ) , parse( expr[i][2] ) ) )
 		else
 			throw(LispError("Not part of the grammar for with!"))
 		end
@@ -239,6 +240,7 @@ function lambdaHelper( expr::Array{Any})
 	result = Array{Symbol, 1}()
 	for i = 1:length( expr )
 		if typeof(expr[i]) == Symbol
+			repeatVariables(result, expr[i] )
   			push!(result, parse( expr[i] ).sym )
 		else
 			throw(LispError("Not part of the grammar for lambda!"))
@@ -253,6 +255,30 @@ function lambdaParser( expr::Array{Any} )
 		push!(array, parse( expr[i] ) )
 	end
 	return array
+end
+
+function repeatVariables( expr::Array{WithExpr}, sym::Symbol)
+	if length(expr) == 0
+		return
+	end
+
+	for i = 1:length( expr )
+		if expr[i].ref_node.sym == sym
+			throw( LispError("Don't repeat values when defining!"))
+		end
+	end
+end
+
+function repeatVariables( expr::Array{Symbol}, sym::Symbol)
+	if length(expr) == 0
+		return
+	end
+
+	for i = 1:length( expr )
+		if expr[i] == sym
+			throw( LispError("Don't repeat values when defining!"))
+		end
+	end
 end
 
 
@@ -290,8 +316,6 @@ function calc( ast::ManyNums, env::Environment )
 end
 
 function calc( ast::BinopNode, env::Environment )
-
-
 	if ((typeof(calc(ast.lhs, env)) != NumVal) || (typeof(calc(ast.rhs, env)) != NumVal))
 		throw( LispError("Invalid arguments for calculating a binary operator!"))
 	end
