@@ -18,12 +18,11 @@
 5. Main.ExtInt.NumVal(1)
 6. Pass
 7. Pass
-8. ErrorException("type ClosureVal has no field n")
+8. Error
 9. Error
 10. Main.ExtInt.NumVal(4)
 
         Failed tests:
-8. 1 point. calc (+ (lambda (x) x) 2), make sure to check your types
 
         Grade:
-9 out of 10
+10 out of 10

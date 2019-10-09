@@ -165,6 +165,10 @@ function parse( expr::Symbol )
 end
 
 function parse( expr::Array{Any} )
+	if (((typeof(expr[1]) == Symbol)||(typeof(expr[1]) == Int64)) && (length( expr ) == 1))
+		return parse( expr[1] )
+	end
+
 	if (typeof(expr[1]) == Int64)
 
 		list = Array{ NumNode,1 }()
@@ -173,10 +177,6 @@ function parse( expr::Array{Any} )
 		end
 
 		return ManyNums( list )
-	end
-
-	if length(expr) == 1
-		parse( expr[1] )
 	end
 
 	operator = Dict( expr[1] )
@@ -292,6 +292,9 @@ function calc( ast::ManyNums, env::Environment )
 end
 
 function calc( ast::BinopNode, env::Environment )
+	if ((typeof(calc(ast.lhs)) != NumVal) || (typeof(calc(ast.rhs)) != NumVal))
+		throw( LispError("Invalid arguments for calculating a binary operator!"))
+	end
 
 	if ast.op == /
 		if calc( ast.rhs, env ).n == 0
