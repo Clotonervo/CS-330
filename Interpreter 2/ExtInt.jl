@@ -224,9 +224,12 @@ function parse( expr::Any )
 end
 
 function withHelper( expr::Array{Any})
-	display(expr)
 	result = Array{WithExpr, 1}()
 	for i = 1:length(expr)
+		if typeof(expr[i]) != Array{Any, 1}
+			throw(LispError("Invalid with syntax!"))
+		end
+
 		if length( expr[i] ) == 2
 			repeatVariables(result, expr[i][1] )
 			push!(result, WithExpr( parse( expr[i][1] ) , parse( expr[i][2] ) ) )
@@ -358,6 +361,7 @@ function calc( ast::If0Node, env::Environment )
 end
 
 function calc( ast::WithNode, env::Environment )
+
 	ext_env = env
 	for i = 1:length(ast.expr)
 		binding = ast.expr[i]
@@ -380,7 +384,7 @@ function calc( ast::VarRefNode, env::ExtendedEnv )
 end
 
 function calc( ast::FuncDefNode, env::Environment )
-    return ClosureVal( ast.formal, ast.body , env )
+    return ClosureVal( ast.formal, ast.body, env )
 end
 
 function calc( ast::FuncAppNode, env::Environment )
@@ -395,7 +399,7 @@ function calc( ast::FuncAppNode, env::Environment )
 	    actual_parameter = calc( ast.arg_expr[i], env )
 	    ext_env = ExtendedEnv(  closure_val.formal[i],
 								actual_parameter,
-								ext_env)
+								env)
 	  end
     return calc( closure_val.body, ext_env )
 end
@@ -419,6 +423,7 @@ function interp( cs::AbstractString )
 end
 
 function runTests()
+	display("--------------- Binop and Unary Op tests ------------------------")
 	assert("(+ 1 3)", ExtInt.NumVal(4), "1. Basic addition")
 	assert("(- 1 3)", ExtInt.NumVal(-2), "2. Basic subtraction")
 	assert("(* 2 3)", ExtInt.NumVal(6), "3. Basic mulitiplication")
@@ -435,18 +440,42 @@ function runTests()
 	assert("(collatz (+ 10 3))", ExtInt.NumVal(9), "12. Nested Collatz")
 	assert("(- (+ 1 1))", ExtInt.NumVal(-2), "13. Nested Negative")
 
-
 	expectLispError("(collatz (- 1 3))", "14. Collatz nested negative")
 
+	display("------------------ If0 tests ------------------")
+
+	assert("(if0 1 3 2)", NumVal(2), "1. Basic if0")
+	assert("(if0 0 3 2)", NumVal(3), "2. Basic if0")
+	expectLispError("(if0 0 x 1)", "3. Basic error checking if0")
+
+	display("----------------- Ids tests ----------------")
+
+	expectLispError("(with (+ 1) 3)", "1. With Id checking")
+	expectLispError("(with (mod 1) 3)", "2. With Id checking")
+	expectLispError("(with (lambda 1) 3)", "3. With Id checking")
+	expectLispError("(with (if0 1) 3)", "4. With Id checking")
 
 
 
-	#assert("(with ((x 1)) (with (f (lambda () x)) (with ((x 2)) (f))))", "", "Super complicated with")
+
+	display("----------------- With tests ------------------")
+
+
+
+	display("---------------- Lambda tests -------------------")
+
+	assert("(lambda () 1)", ExtInt.ClosureVal(Symbol[], ExtInt.NumNode(1), ExtInt.EmptyEnv()), "1. Basic lambda")
+	# assert("(with ((x 1)) (with (f (lambda () x)) (with ((x 2)) (f))))", nothing, "Super complicated with")
+
+
+
+
 end
 
 function assert( ast::AbstractString, result::AE, message::String)
-	a = interp(ast)
-	# display(a)
+	 a = interp(ast)
+	  # display(a)
+	  # display(result)
 	if a == result
 		display("Passed! $message")
 	else
@@ -456,9 +485,9 @@ end
 
 function assert( ast::AbstractString, result::RetVal, message::String)
 	a = interp(ast)
-	# display(a)
-
-	if a == result
+	display(a)
+	display(result)
+	if a === result
 		display("Passed! $message")
 	else
 		display("Failed! $message ============================")
