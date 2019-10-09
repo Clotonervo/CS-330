@@ -224,6 +224,7 @@ function parse( expr::Any )
 end
 
 function withHelper( expr::Array{Any})
+	display(expr)
 	result = Array{WithExpr, 1}()
 	for i = 1:length(expr)
 		if length( expr[i] ) == 2
@@ -417,6 +418,62 @@ function interp( cs::AbstractString )
     return calc( ast, EmptyEnv() )
 end
 
+function runTests()
+	assert("(+ 1 3)", ExtInt.NumVal(4), "1. Basic addition")
+	assert("(- 1 3)", ExtInt.NumVal(-2), "2. Basic subtraction")
+	assert("(* 2 3)", ExtInt.NumVal(6), "3. Basic mulitiplication")
+	assert("(/ 20 5)", ExtInt.NumVal(4.0), "4. Basic division")
+	assert("(mod 17 3)", ExtInt.NumVal(2), "5. Basic mod")
+	assert("(collatz 13)", ExtInt.NumVal(9), "6. Basic collatz")
+
+	expectLispError("(/ 1 0)", "7. Division errors")
+	expectLispError("(collatz -20)", "8. Collatz negative")
+
+	assert("(+ 1 (+ 1 3))", ExtInt.NumVal(5), "9. Nested Addition")
+	assert("(/ 20 (+ 2 3))", ExtInt.NumVal(4.0), "10. Nested Division")
+	assert("(mod (+ 10 7) 3)", ExtInt.NumVal(2), "11. Nested mod")
+	assert("(collatz (+ 10 3))", ExtInt.NumVal(9), "12. Nested Collatz")
+	assert("(- (+ 1 1))", ExtInt.NumVal(-2), "13. Nested Negative")
+
+
+	expectLispError("(collatz (- 1 3))", "14. Collatz nested negative")
+
+
+
+
+	#assert("(with ((x 1)) (with (f (lambda () x)) (with ((x 2)) (f))))", "", "Super complicated with")
+end
+
+function assert( ast::AbstractString, result::AE, message::String)
+	a = interp(ast)
+	# display(a)
+	if a == result
+		display("Passed! $message")
+	else
+		display("Failed! $message ============================")
+	end
+end
+
+function assert( ast::AbstractString, result::RetVal, message::String)
+	a = interp(ast)
+	# display(a)
+
+	if a == result
+		display("Passed! $message")
+	else
+		display("Failed! $message ============================")
+	end
+end
+
+function expectLispError( ast::AbstractString, message::String )
+	try interp(ast)
+		display("Failed! No error thrown! $message ============================")
+	catch LispError
+		display("Passed! $message")
+	end
+end
+
+
 # evaluate a series of tests in a file
 function interpf( fn::AbstractString )
   f = open( fn )
@@ -451,5 +508,11 @@ function interpf( fn::AbstractString )
 
   close( f )
 end
+
+
+
+
+
+
 
 end #module
