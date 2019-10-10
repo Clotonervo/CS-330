@@ -361,7 +361,6 @@ function calc( ast::If0Node, env::Environment )
 end
 
 function calc( ast::WithNode, env::Environment )
-
 	ext_env = env
 	for i = 1:length(ast.expr)
 		binding = ast.expr[i]
@@ -377,10 +376,23 @@ end
 
 function calc( ast::VarRefNode, env::ExtendedEnv )
     if ast.sym == env.sym
-        return env.val
+		if typeof(env.val) == ClosureVal
+			return calcClosure(env.val, env)
+		else
+        	return env.val
+		end
     else
         return calc( ast, env.parent )
     end
+end
+
+function calcClosure( ast::ClosureVal, env::Environment)
+	display(ast)
+	if length(ast.formal) == 0
+		return calc(ast.body, env)
+	else
+		throw(LispError("Haven't finished this function yet! TODO"))
+	end
 end
 
 function calc( ast::FuncDefNode, env::Environment )
@@ -396,7 +408,7 @@ function calc( ast::FuncAppNode, env::Environment )
 	ext_env = closure_val.env
 
 	if ((length(ast.arg_expr)) != (length(closure_val.formal)))
-	    throw(LispError("Mismatch in arguments when calculating closure val!"))
+	    throw(LispError("Mismatch in arguments when calculating function!"))
 	  end
 
 	for i = 1:length(ast.arg_expr)
@@ -406,6 +418,10 @@ function calc( ast::FuncAppNode, env::Environment )
 								env)
 	  end
     return calc( closure_val.body, ext_env )
+end
+
+function calc( ast::ClosureVal)
+
 end
 
 function calc( ast::AE )
@@ -464,6 +480,9 @@ function runTests()
 
 	display("----------------- With tests ------------------")
 
+	assert("(with ((x 1)) 2)", NumVal(2), "1. Basic with")
+	assert("(with ((x 1)) 2)", NumVal(2), "1. Basic with")
+
 
 
 	display("---------------- Lambda tests -------------------")
@@ -478,9 +497,9 @@ end
 
 function assert( ast::AbstractString, result::AE, message::String)
 	 a = interp(ast)
-	  # display(a)
+	   # display(a == result)
 	  # display(result)
-	if a == result
+	if isequal(a, result)
 		display("Passed! $message")
 	else
 		display("Failed! $message ============================")
@@ -489,9 +508,9 @@ end
 
 function assert( ast::AbstractString, result::RetVal, message::String)
 	a = interp(ast)
-	display(a)
-	display(result)
-	if a === result
+	# display(a === result)
+	# display(result)
+	if isequal(a, result)
 		display("Passed! $message")
 	else
 		display("Failed! $message ============================")
