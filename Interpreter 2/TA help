@@ -1,0 +1,3 @@
+interp("(lambda () 4)") - Should this return a ClosureVal or the number 4?
+
+interp("(with ((x 1)) (with ((f (lambda () x))) (with ((x 2)) f)))") - Should this return a Closure Val or the number 1?
