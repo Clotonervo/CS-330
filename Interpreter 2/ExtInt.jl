@@ -165,6 +165,10 @@ function parse( expr::Symbol )
 end
 
 function parse( expr::Array{Any} )
+	if length(expr) == 0
+		throw(LispError("No arguments given! Incorrect syntax!"))
+	end
+
 	if (((typeof(expr[1]) == Int64)) && (length( expr ) == 1))
 		return parse( expr[1] )
 	end
@@ -223,6 +227,10 @@ function parse( expr::Any )
   throw( LispError("Invalid type $expr") )
 end
 
+function withHelper(expr::Any)
+	throw( LispError("Invalid with type $expr") )
+end
+
 function withHelper( expr::Array{Any})
 	result = Array{WithExpr, 1}()
 	for i = 1:length(expr)
@@ -240,6 +248,10 @@ function withHelper( expr::Array{Any})
 	return result
 end
 
+function lambdaHelper(expr::Any)
+	throw( LispError("Invalid lambda type $expr") )
+end
+
 function lambdaHelper( expr::Array{Any})
 	result = Array{Symbol, 1}()
 	for i = 1:length( expr )
@@ -251,6 +263,10 @@ function lambdaHelper( expr::Array{Any})
 		end
 	end
 	return result
+end
+
+function lambdaParser(expr::Any)
+	throw( LispError("Invalid lambda type $expr") )
 end
 
 function lambdaParser( expr::Array{Any} )
@@ -352,6 +368,10 @@ function calc( ast::UnaryNode, env::Environment)
 end
 
 function calc( ast::If0Node, env::Environment )
+	if typeof(calc(ast.cond, env)) != NumVal
+		throw( LispError("Invalid arguments for calculating a If0 operator!"))
+	end
+
     cond = calc( ast.cond, env )
     if cond.n == 0
         return calc( ast.zerobranch, env )
@@ -388,7 +408,11 @@ end
 
 function calc( ast::FuncAppNode, env::Environment )
     closure_val = calc( ast.fun_expr, env )
-	#Check to see that its a closure node
+
+	if typeof(closure_val) != ClosureVal
+		throw( LispError("Unexpected type when calculating a function!"))
+	end
+
 	ext_env = closure_val.env
 
 	if ((length(ast.arg_expr)) != (length(closure_val.formal)))
@@ -399,7 +423,7 @@ function calc( ast::FuncAppNode, env::Environment )
 	    actual_parameter = calc( ast.arg_expr[i], env )
 	    ext_env = ExtendedEnv(  closure_val.formal[i],
 								actual_parameter,
-								env)
+								ext_env)
 	  end
     return calc( closure_val.body, ext_env )
 end
@@ -451,6 +475,16 @@ function runTests()
 	assert("(if0 1 3 2)", NumVal(2), "1. Basic if0")
 	assert("(if0 0 3 2)", NumVal(3), "2. Basic if0")
 	expectLispError("(if0 0 x 1)", "3. Basic error checking if0")
+	expectLispError("(if0 0 if0 1)","4. Id checking")
+	expectLispError("(if0 0 with 1)","5. Id checking")
+	assert("(if0 (with ((x 0)) ((lambda () x))) 1 -1)", NumVal(1), "6. Nested with")
+	expectLispError("(if0 (with ((x 0)) (lambda () x)) 1 -1)",  "7. Nested with (closure)")
+	expectLispError("(if0 0 3 2 2 3 1)", "8. Parameter checking")
+	expectLispError("(if0 (- 1 2) 1 x)", "9. Type checking")
+	expectLispError("(if0 (lambda (x y) (* x y)) 1 2)", "10. Lambda if0 type check")
+	assert("(if0 ((lambda (x y) (* x y)) 0 3) 1 2)", NumVal(1), "11. Lambda if0 type check")
+
+
 
 	display("----------------- Ids tests ----------------")
 
@@ -458,56 +492,82 @@ function runTests()
 	expectLispError("(with (mod 1) 3)", "2. With Id checking")
 	expectLispError("(with (lambda 1) 3)", "3. With Id checking")
 	expectLispError("(with (if0 1) 3)", "4. With Id checking")
-
+	expectLispError("(f)", "5. Simple Id checking")
+	expectLispError("f", "6. Simple Id checking")
+	expectLispError("(f f f)", "7. Multiple Id checking")
+	assert("(with ((x 1)) (+ 1 x))", NumVal(2), "8. Positive Id check")
 
 
 
 	display("----------------- With tests ------------------")
 
 	assert("(with ((x 1)) 2)", NumVal(2), "1. Basic with")
-	assert("(with ((x 1)) 2)", NumVal(2), "1. Basic with")
-
+	assert("(with ((x 5)) (+ 50 x))", NumVal(55), "2. With with expressions")
+	assert("(with ((x 3) (y 4)) (* y x))", NumVal(12), "3. Mulitple parameters")
+	assert("(with () 1)", NumVal(1), "4. Nothing")
+	expectLispError("(with a a)", "5. Type checking")
+	expectLispError("(with 1 2)", "6. Type checking")
+	expectLispError("(with (x) 1)", "7. More syntax checks")
+	expectLispError("(with (()) 1)", "8. More syntax checks")
 
 
 	display("---------------- Lambda tests -------------------")
 
 	assert("(lambda () 1)", ExtInt.ClosureVal(Symbol[], ExtInt.NumNode(1), ExtInt.EmptyEnv()), "1. Basic lambda")
-	# assert("(with ((x 1)) (with (f (lambda () x)) (with ((x 2)) (f))))", nothing, "Super complicated with")
+	assert("((lambda () 1))", NumVal(1), "2. Basic lambda application")
+	assert("(with ((x 1)) (with ((f (lambda () x))) (with ((x 2)) (f))))", NumVal(1), "3. Super complicated with/lambda test")
+	assert("(with ((x 1)) (with ((f (lambda (y) y))) (with ((x 2)) (f 4))))", NumVal(4), "4. Super complicated with/lambda test")
+	assert("(with ((x 1)) (with ((f (lambda () x))) (with ((x 2)) f)))", ExtInt.ClosureVal(Symbol[], ExtInt.VarRefNode(:x), ExtInt.ExtendedEnv(:x, ExtInt.NumVal(1), ExtInt.EmptyEnv())), "5. Super complicated with/lambda test")
+	assert("(with ((x 1) (y 5)) (with ((f (lambda () (* x y)))) (with () (f))))", NumVal(5), "6. Double parameters and withs")
+	assert("((lambda (x y) (* x y)) 2 3)", NumVal(6), "7. Simple double parameters")
+	expectLispError("((lambda (x y) (* x y)) 3)", "8. Arity check")
+	assert("(+ ((lambda (x y) (* x y)) 2 3) 6)", NumVal(12), "9. Binop check double parameters")
+	expectLispError("(+ ((lambda (x y) (* x y)) 6)", "10. Lambda binop type check")
+	expectLispError("(collatz ((lambda (x y) (* x y)) 2 -3))", "11. Lambda collatz calc check")
+	expectLispError("(/ ((lambda (x y) (* x y)) 2 0))", "12. Lambda division calc check")
+	assert("(+ ((lambda (x y) (* x y)) 2 -6) 6)", NumVal(-6), "13. Binop check double parameters negative")
+	assert("(+ ((lambda (x y) (* x y)) 2 (- 6)) 6)", NumVal(-6), "14. Binop check double parameters negative 2")
+	expectLispError("((lambda (x 1) (* x 1)) 2)", "15. Simple double parameters type checking")
+	assert("(lambda () a)", ExtInt.ClosureVal(Symbol[], ExtInt.VarRefNode(:a), ExtInt.EmptyEnv()), "16. Basic lambda")
 
-# Write toString to test lambda closureVals
-
-
+	expectLispError("()", "Null array")
 
 end
 
 function assert( ast::AbstractString, result::AE, message::String)
 	 a = interp(ast)
-	   # display(a == result)
-	  # display(result)
 	if isequal(a, result)
 		display("Passed! $message")
 	else
-		display("Failed! $message ============================")
+		display("Failed! $message *******************************")
 	end
 end
 
 function assert( ast::AbstractString, result::RetVal, message::String)
 	a = interp(ast)
-	# display(a === result)
-	 # display(result)
-	 # display(a)
-	if a == result
+
+	if typeof(a) == ClosureVal
+		if repr(a) == repr(result)
+			display("Passed! $message")
+		else
+			display("Failed! $message *******************************")
+		end
+	elseif a == result
 		display("Passed! $message")
 	else
-		display("Failed! $message ============================")
+		display("Failed! $message *******************************")
 	end
 end
 
 function expectLispError( ast::AbstractString, message::String )
 	try interp(ast)
 		display("Failed! No error thrown! $message ============================")
-	catch LispError
-		display("Passed! $message")
+	catch e
+		if isa(e, LispError)
+			display("Passed! $message")
+		else
+			throw(e)
+		end
 	end
 end
 
