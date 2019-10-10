@@ -474,6 +474,7 @@ function runTests()
 	assert("(lambda () 1)", ExtInt.ClosureVal(Symbol[], ExtInt.NumNode(1), ExtInt.EmptyEnv()), "1. Basic lambda")
 	# assert("(with ((x 1)) (with (f (lambda () x)) (with ((x 2)) (f))))", nothing, "Super complicated with")
 
+# Write toString to test lambda closureVals
 
 
 
