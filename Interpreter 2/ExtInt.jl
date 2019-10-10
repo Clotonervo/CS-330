@@ -165,7 +165,7 @@ function parse( expr::Symbol )
 end
 
 function parse( expr::Array{Any} )
-	if (((typeof(expr[1]) == Symbol)||(typeof(expr[1]) == Int64)) && (length( expr ) == 1))
+	if (((typeof(expr[1]) == Int64)) && (length( expr ) == 1))
 		return parse( expr[1] )
 	end
 
@@ -376,23 +376,10 @@ end
 
 function calc( ast::VarRefNode, env::ExtendedEnv )
     if ast.sym == env.sym
-		if typeof(env.val) == ClosureVal
-			return calcClosure(env.val, env)
-		else
-        	return env.val
-		end
+		return env.val
     else
         return calc( ast, env.parent )
     end
-end
-
-function calcClosure( ast::ClosureVal, env::Environment)
-	display(ast)
-	if length(ast.formal) == 0
-		return calc(ast.body, env)
-	else
-		throw(LispError("Haven't finished this function yet! TODO"))
-	end
 end
 
 function calc( ast::FuncDefNode, env::Environment )
@@ -401,6 +388,7 @@ end
 
 function calc( ast::FuncAppNode, env::Environment )
     closure_val = calc( ast.fun_expr, env )
+	#Check to see that its a closure node
 	ext_env = closure_val.env
 
 	if ((length(ast.arg_expr)) != (length(closure_val.formal)))
@@ -505,8 +493,9 @@ end
 function assert( ast::AbstractString, result::RetVal, message::String)
 	a = interp(ast)
 	# display(a === result)
-	# display(result)
-	if isequal(a, result)
+	 # display(result)
+	 # display(a)
+	if a == result
 		display("Passed! $message")
 	else
 		display("Failed! $message ============================")
