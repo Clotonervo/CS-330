@@ -384,7 +384,11 @@ function calc( ast::VarRefNode, env::ExtendedEnv )
 end
 
 function calc( ast::FuncDefNode, env::Environment )
-    return ClosureVal( ast.formal, ast.body, env )
+	# if length(ast.formal) == 0
+	# 	return calc(ast.body, env)
+	# else
+    	return ClosureVal( ast.formal, ast.body, env )
+	# end
 end
 
 function calc( ast::FuncAppNode, env::Environment )
