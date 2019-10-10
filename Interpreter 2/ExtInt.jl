@@ -396,11 +396,7 @@ function calcClosure( ast::ClosureVal, env::Environment)
 end
 
 function calc( ast::FuncDefNode, env::Environment )
-	# if length(ast.formal) == 0
-	# 	return calc(ast.body, env)
-	# else
-    	return ClosureVal( ast.formal, ast.body, env )
-	# end
+    return ClosureVal( ast.formal, ast.body, env )
 end
 
 function calc( ast::FuncAppNode, env::Environment )
