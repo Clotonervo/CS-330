@@ -12,30 +12,35 @@ if __name__ == "__main__":
     run_cmd = "julia"
     tests = """
 
+let
+  testnum = 0
+  global tnum
+  tnum() = testnum += 1
+end
+
 push!(LOAD_PATH, pwd())
 
 using Lexer
 using Error
 
-let
-	testnum = 0
-	global tnum
-	tnum() = testnum += 1
-end
 function testNum(num)
   return string(num) * ". "
 end
 
 function parseT(str)
-  ExtInt.parse(Lexer.lex(str))
+  TransInt.parse(Lexer.lex(str))
 end
 
-function interpretT(str)
-  ExtInt.calc(parseT(str))
+function analyze(str)
+  TransInt.analyze(parseT(str))
+end
+
+function interpret(str)
+  TransInt.calc(analyze(str))
 end
 
 function removeNL(str)
-replace(string(str), "\n" => "")
+  replace(string(str), "\n" => "")
 end
 
 function testErr(f, param, num)
@@ -67,39 +72,47 @@ function testAns(f, param, num)
   end
 end
 
+function testContains(f, param, reg, num)
+  try
+    answer = string(occursin(reg, removeNL(f(param))))
+    println(testNum(num) * answer)
+  catch Y
+    println(testNum(num) * removeNL(Y))
+  end
+end
 
-testPass(parseT, "(+ 1 (- 3 4))", tnum()) # Pass RudInt
-testErr(parseT, "(-)", tnum()) # Error
-testErr(parseT, "if0", tnum()) # Error
-testAns(interpretT, "(if0 1 2 3)", tnum()) #Pass
-testAns(interpretT, "(with ((x 1)) x)", tnum()) # Pass
-testPass(interpretT, "(lambda (x) x)", tnum()) # Pass
-testPass(parseT, "(1 2 3)", tnum()) #Pass
-testErr(interpretT, "(+ (lambda (x) x) 2)", tnum()) #Error
-testErr(interpretT, "(collatz -1)", tnum()) #Error
-testAns(interpretT, "((lambda () 4))", tnum()) # numval 4
+
+testPass(parseT, "(and 1 2 3 3)", tnum())
+testPass(parseT, "(and (and 1 2) a)", tnum())
+testPass(parseT, "(+ 1 2 3 4)", tnum())
+testPass(parseT, "(+ (+ 1 2 3) 2)", tnum())
+
+testContains(analyze, "(with ((x 1)) x)", r"with", tnum())
+testContains(analyze, "(and 1 2 3)", r"And", tnum())
+
+testAns(interpret, "(and 1 2)", tnum())
+testAns(interpret, "(+ 1 2 3)", tnum())
+testAns(interpret, "(* (and 1 2 3) (+ 1 2 3))", tnum())
 """
-    tests_info = """1. 1 point. parse (+ 1 (- 3 4)), nested expressions
-2. 1 point. parse (-) Be sure to check arguments
-3. 1 point. parse if0, Don't use Key words as id's
-4. 1 point. calc (if0 1 2 3), Make sure your If statements work
-5. 1 point. calc (with ((x 1)) x), Make sure your withs work
-6. 1 point. calc (lambda (x) x), Make sure your lambdas parse and calc
-7. 1 point. parse (1 2 3), Not a parse error,
-8. 1 point. calc (+ (lambda (x) x) 2), make sure to check your types
-9. 1 point. calc (collatz -1), Don't allow invalid arithmatic
-10. 1 point. calc ((lambda () 4)), Function application
+    tests_info = """1. 1 point. Pass parse Test (and 1 2 3 3)
+2. 1 point. Pass parse Test (and (and 1 2) a)
+3. 1 point. Pass Parse Test  (+ 1 2 3 4)
+4. 1 point. Pass Parse Test  (+ (+ 1 2 3) 2)
+5. 1 point. false Analyze Test (with ((x 1)) x)"
+6. 1 point. false Analyze Test (and 1 2 3)
+7. 1 point. Main.TransInt.NumVal(1) Calc Test (and 1 2)
+8. 1 point. Main.TransInt.NumVal(6) Calc Test (+ 1 2 3)
+9. 1 point. Main.TransInt.NumVal(6) Calc Test (* (and 1 2 3) (+ 1 2 3))
 """
     correctoutput = """1. Pass
-2. Error
-3. Error
-4. Main.ExtInt.NumVal(3)
-5. Main.ExtInt.NumVal(1)
-6. Pass
-7. Pass
-8. Error
-9. Error
-10. Main.ExtInt.NumVal(4)
+2. Pass
+3. Pass
+4. Pass
+5. false
+6. false
+7. Main.TransInt.NumVal(1)
+8. Main.TransInt.NumVal(6)
+9. Main.TransInt.NumVal(6)
 """
     grade = 0
     total_possible = 0

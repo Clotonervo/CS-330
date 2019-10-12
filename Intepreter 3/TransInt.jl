@@ -1,5 +1,5 @@
 # <AE> ::= number
-#           | (+ <AE> <AE>)
+#           | (+ <AE> <AE> <AE>*)   # at least two parameters, possibly infinity.  note extra star!
 #           | (- <AE> <AE>)
 #           | (* <AE> <AE>)
 #           | (/ <AE> <AE>)
@@ -8,22 +8,18 @@
 #           | (- <AE>)
 #           | id
 #           | (if0 <AE> <AE> <AE>)
-#
-#           # Major change: function definitions, calls &
-#           # with statements now take a variable number of arguments!
-#           # Note the extra parens.
-#
 #           | (with ( (id <AE>)* ) <AE>)
 #           | (lambda (id*) <AE>)
+#           | (and <AE> <AE> <AE>*)  # new operation 'and'
 #           | (<AE> <AE>*)
 
-module ExtInt
+module TransInt
 
 push!(LOAD_PATH, pwd())
 
 using Error
 using Lexer
-export parse, calc, interp
+export parse, calc, analyze, interp
 
 #
 # ==================================================
@@ -39,6 +35,10 @@ end
 
 struct ManyNums <: AE
 	nodes::Array{ NumNode }
+end
+
+struct PlusNode <: AE
+	numbers::Array{ AE }
 end
 
 # <AE> ::= (x <AE> <AE>)
@@ -59,6 +59,10 @@ struct If0Node <: AE
     cond::AE
     zerobranch::AE
     nzerobranch::AE
+end
+
+struct AndNode <: AE
+	args::Array{ AE }
 end
 
 # <AE> ::= <id>
@@ -106,6 +110,8 @@ function Dict(op::Symbol)
 		return mod
 	elseif op == :collatz
 		return collatz
+	# elseif op == :and
+	# 	return and
 	else
 		return nothing
 	end
@@ -165,6 +171,7 @@ function parse( expr::Symbol )
 end
 
 function parse( expr::Array{Any} )
+	 # display(expr)
 	if length(expr) == 0
 		throw(LispError("No arguments given! Incorrect syntax!"))
 	end
@@ -185,7 +192,20 @@ function parse( expr::Array{Any} )
 	operator = Dict( expr[1] )
 
 	if operator != nothing
-		if length( expr ) == 3
+		if operator == +
+			if length(expr) == 3
+				return BinopNode(operator, parse(expr[2]), parse(expr[3]))
+			elseif length(expr) > 3
+				numbers = Array{ AE, 1}()
+				for i=2:length( expr )
+					push!(numbers, parse(expr[i]))
+				end
+				return PlusNode(numbers)
+			else
+				throw(LispError("Invalid number of arguments for $operator"))
+			end
+
+		elseif length( expr ) == 3
 			if operator != collatz
 				return BinopNode(operator, parse( expr[2] ), parse( expr[3] ) )
 			else
@@ -217,6 +237,16 @@ function parse( expr::Array{Any} )
 			return FuncDefNode( lambdaHelper( expr[2] ), parse( expr[3] ) )
 		else
 			throw( LispError("Invalid number of arguments for lambda!"))
+		end
+	elseif expr[1] == :and
+		if length(expr) >= 3
+			args = Array{ AE, 1}()
+			for i=2:length( expr )
+				push!(args, parse(expr[i]))
+			end
+			return AndNode(args)
+		else
+			throw(LispError("Invalid number of arguments for $operator"))
 		end
 	else
 		return FuncAppNode( parse( expr[1] ), lambdaParser( expr ) )
@@ -301,6 +331,121 @@ function repeatVariables( expr::Array{Symbol}, sym::Symbol)
 	end
 end
 
+#
+# ====================================================================== analyze
+#
+
+function analyze( ast::NumNode )
+    return ast
+end
+
+function analyze( ast::VarRefNode )
+    return ast
+end
+
+function analyze( ast::PlusNode )
+    return BinopNode(+, analyze(ast.numbers[1]), plusHelper(ast.numbers, 2) )
+end
+
+function plusHelper( ast::Array{AE}, index::Int64)
+	if length(ast) - index == 0
+		return analyze(ast[index])
+	else
+		index += 1
+		return BinopNode(+, analyze( ast[index - 1] ), plusHelper(ast, index))
+	end
+end
+
+function analyze( ast::AndNode )
+	return If0Node(analyze(ast.args[1]), NumNode(0), andHelper(ast.args, 1))
+end
+
+function andHelper( ast::Array{AE}, index::Int64)
+	if length(ast) - index == 0
+		return If0Node(analyze(ast[index]), NumNode(0), NumNode(1))
+	else
+		index += 1
+		return If0Node(analyze( ast[index - 1] ), NumNode(0), andHelper(ast, index))
+	end
+end
+
+
+# function analyze( ast::MinusNode )
+#     alhs = analyze( ast.lhs )
+#     arhs = analyze( ast.rhs )
+#     if typeof(alhs) == NumNode && typeof(arhs) == NumNode
+#         return NumNode( alhs.n - arhs.n )
+#     end
+#
+#     return MinusNode( alhs, arhs )
+# end
+
+function analyze( ast::UnaryNode )
+    anum = analyze( ast.num )
+    if typeof(anum) == NumNode && anum.n > 0
+        return NumNode( ast.op(anum.n) )
+    end
+
+    return UnaryNode( ast.op, anum )
+end
+
+function analyze(ast::BinopNode)
+	    alhs = analyze( ast.lhs )
+	    arhs = analyze( ast.rhs )
+
+		if typeof(alhs) == NumNode && typeof(arhs) == NumNode
+			if ((ast.op == /) && (arhs.n == 0))
+				throw(LispError("Can't divide by 0!"))
+			end
+	        return NumNode( ast.op(alhs.n, arhs.n) )
+		end
+
+		return BinopNode(ast.op, alhs, arhs)
+end
+
+function analyze( ast::WithNode )
+	withSymbols = Array{Symbol, 1}()
+	withArgs = Array{AE, 1}()
+
+	for i = 1:length( ast.expr )
+		push!(withSymbols, ast.expr[i].ref_node.sym)
+		push!(withArgs, analyze(ast.expr[i].binding_expr))
+	end
+	# display(ast.body)
+    # transform from a with expression to application of a function
+     fdn = FuncDefNode( withSymbols, analyze( ast.body ) )
+     return FuncAppNode( fdn, withArgs )
+end
+
+function analyze( ast::If0Node )
+    acond = analyze( ast.cond )
+
+    if typeof( acond ) == NumNode
+        if acond.n == 0
+            return analyze( ast.zerobranch )
+        else
+            return analyze( ast.nzerobranch )
+        end
+    end
+
+    azb = analyze( ast.zerobranch )
+    anzb = analyze( ast.nzerobranch )
+    return If0Node( acond, azb, anzb )
+end
+
+function analyze( ast::FuncDefNode )
+    return FuncDefNode( ast.formal, analyze( ast.body ) )
+end
+
+function analyze( ast::FuncAppNode )
+	args = Array{AE, 1}()
+	for i = 1:length( ast.arg_expr )
+		push!(args, analyze(ast.arg_expr[i]))
+	end
+
+    return FuncAppNode( analyze( ast.fun_expr), args )
+end
+
 
 #
 # =================== collatz helper
@@ -323,7 +468,7 @@ end
 
 
 #
-# ================================================== Calc
+# ============================================================================= Calc
 #
 
 
@@ -368,6 +513,7 @@ function calc( ast::UnaryNode, env::Environment)
 end
 
 function calc( ast::If0Node, env::Environment )
+	# display(ast)
 	if typeof(calc(ast.cond, env)) != NumVal
 		throw( LispError("Invalid arguments for calculating a If0 operator!"))
 	end
@@ -381,6 +527,7 @@ function calc( ast::If0Node, env::Environment )
 end
 
 function calc( ast::WithNode, env::Environment )
+	throw(LispError("WithNode calc! Should never get here!"))
 	ext_env = env
 	for i = 1:length(ast.expr)
 		binding = ast.expr[i]
@@ -447,26 +594,27 @@ end
 function interp( cs::AbstractString )
     lxd = Lexer.lex( cs )
     ast = parse( lxd )
-    return calc( ast, EmptyEnv() )
+    revised_ast = analyze(ast)
+    return calc( revised_ast, EmptyEnv() )
 end
 
 function runTests()
 	display("--------------- Binop and Unary Op tests ------------------------")
-	assert("(+ 1 3)", ExtInt.NumVal(4), "1. Basic addition")
-	assert("(- 1 3)", ExtInt.NumVal(-2), "2. Basic subtraction")
-	assert("(* 2 3)", ExtInt.NumVal(6), "3. Basic mulitiplication")
-	assert("(/ 20 5)", ExtInt.NumVal(4.0), "4. Basic division")
-	assert("(mod 17 3)", ExtInt.NumVal(2), "5. Basic mod")
-	assert("(collatz 13)", ExtInt.NumVal(9), "6. Basic collatz")
+	assert("(+ 1 3)", TransInt.NumVal(4), "1. Basic addition")
+	assert("(- 1 3)", TransInt.NumVal(-2), "2. Basic subtraction")
+	assert("(* 2 3)", TransInt.NumVal(6), "3. Basic mulitiplication")
+	assert("(/ 20 5)", TransInt.NumVal(4.0), "4. Basic division")
+	assert("(mod 17 3)", TransInt.NumVal(2), "5. Basic mod")
+	assert("(collatz 13)", TransInt.NumVal(9), "6. Basic collatz")
 
 	expectLispError("(/ 1 0)", "7. Division errors")
 	expectLispError("(collatz -20)", "8. Collatz negative")
 
-	assert("(+ 1 (+ 1 3))", ExtInt.NumVal(5), "9. Nested Addition")
-	assert("(/ 20 (+ 2 3))", ExtInt.NumVal(4.0), "10. Nested Division")
-	assert("(mod (+ 10 7) 3)", ExtInt.NumVal(2), "11. Nested mod")
-	assert("(collatz (+ 10 3))", ExtInt.NumVal(9), "12. Nested Collatz")
-	assert("(- (+ 1 1))", ExtInt.NumVal(-2), "13. Nested Negative")
+	assert("(+ 1 (+ 1 3))", TransInt.NumVal(5), "9. Nested Addition")
+	assert("(/ 20 (+ 2 3))", TransInt.NumVal(4.0), "10. Nested Division")
+	assert("(mod (+ 10 7) 3)", TransInt.NumVal(2), "11. Nested mod")
+	assert("(collatz (+ 10 3))", TransInt.NumVal(9), "12. Nested Collatz")
+	assert("(- (+ 1 1))", TransInt.NumVal(-2), "13. Nested Negative")
 
 	expectLispError("(collatz (- 1 3))", "14. Collatz nested negative")
 
@@ -509,15 +657,16 @@ function runTests()
 	expectLispError("(with 1 2)", "6. Type checking")
 	expectLispError("(with (x) 1)", "7. More syntax checks")
 	expectLispError("(with (()) 1)", "8. More syntax checks")
+	assert("(with ((x 5) (y 6)) (+ x y))", NumVal(11), "9. With->Lambda check")
 
 
 	display("---------------- Lambda tests -------------------")
 
-	assert("(lambda () 1)", ExtInt.ClosureVal(Symbol[], ExtInt.NumNode(1), ExtInt.EmptyEnv()), "1. Basic lambda")
+	assert("(lambda () 1)", TransInt.ClosureVal(Symbol[], TransInt.NumNode(1), TransInt.EmptyEnv()), "1. Basic lambda")
 	assert("((lambda () 1))", NumVal(1), "2. Basic lambda application")
 	assert("(with ((x 1)) (with ((f (lambda () x))) (with ((x 2)) (f))))", NumVal(1), "3. Super complicated with/lambda test")
 	assert("(with ((x 1)) (with ((f (lambda (y) y))) (with ((x 2)) (f 4))))", NumVal(4), "4. Super complicated with/lambda test")
-	assert("(with ((x 1)) (with ((f (lambda () x))) (with ((x 2)) f)))", ExtInt.ClosureVal(Symbol[], ExtInt.VarRefNode(:x), ExtInt.ExtendedEnv(:x, ExtInt.NumVal(1), ExtInt.EmptyEnv())), "5. Super complicated with/lambda test")
+	assert("(with ((x 1)) (with ((f (lambda () x))) (with ((x 2)) f)))", TransInt.ClosureVal(Symbol[], TransInt.VarRefNode(:x), TransInt.ExtendedEnv(:x, TransInt.NumVal(1), TransInt.EmptyEnv())), "5. Super complicated with/lambda test")
 	assert("(with ((x 1) (y 5)) (with ((f (lambda () (* x y)))) (with () (f))))", NumVal(5), "6. Double parameters and withs")
 	assert("((lambda (x y) (* x y)) 2 3)", NumVal(6), "7. Simple double parameters")
 	expectLispError("((lambda (x y) (* x y)) 3)", "8. Arity check")
@@ -528,7 +677,7 @@ function runTests()
 	assert("(+ ((lambda (x y) (* x y)) 2 -6) 6)", NumVal(-6), "13. Binop check double parameters negative")
 	assert("(+ ((lambda (x y) (* x y)) 2 (- 6)) 6)", NumVal(-6), "14. Binop check double parameters negative 2")
 	expectLispError("((lambda (x 1) (* x 1)) 2)", "15. Simple double parameters type checking")
-	assert("(lambda () a)", ExtInt.ClosureVal(Symbol[], ExtInt.VarRefNode(:a), ExtInt.EmptyEnv()), "16. Basic lambda")
+	assert("(lambda () a)", TransInt.ClosureVal(Symbol[], TransInt.VarRefNode(:a), TransInt.EmptyEnv()), "16. Basic lambda")
 
 	expectLispError("()", "Null array")
 
