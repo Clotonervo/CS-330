@@ -369,17 +369,6 @@ function andHelper( ast::Array{AE}, index::Int64)
 	end
 end
 
-
-# function analyze( ast::MinusNode )
-#     alhs = analyze( ast.lhs )
-#     arhs = analyze( ast.rhs )
-#     if typeof(alhs) == NumNode && typeof(arhs) == NumNode
-#         return NumNode( alhs.n - arhs.n )
-#     end
-#
-#     return MinusNode( alhs, arhs )
-# end
-
 function analyze( ast::UnaryNode )
     anum = analyze( ast.num )
     if typeof(anum) == NumNode && anum.n > 0
@@ -526,16 +515,16 @@ function calc( ast::If0Node, env::Environment )
     end
 end
 
-function calc( ast::WithNode, env::Environment )
-	throw(LispError("WithNode calc! Should never get here!"))
-	ext_env = env
-	for i = 1:length(ast.expr)
-		binding = ast.expr[i]
-		binding_val = calc( binding.binding_expr, env )
-	    ext_env = ExtendedEnv( binding.ref_node.sym, binding_val, ext_env )
-	end
-    return calc( ast.body, ext_env )
-end
+# function calc( ast::WithNode, env::Environment )
+# 	throw(LispError("WithNode calc! Should never get here!"))
+# 	ext_env = env
+# 	for i = 1:length(ast.expr)
+# 		binding = ast.expr[i]
+# 		binding_val = calc( binding.binding_expr, env )
+# 	    ext_env = ExtendedEnv( binding.ref_node.sym, binding_val, ext_env )
+# 	end
+#     return calc( ast.body, ext_env )
+# end
 
 function calc( ast::VarRefNode, env::EmptyEnv )
     throw( Error.LispError("Undefined variable " * string( ast.sym )) )
@@ -678,6 +667,16 @@ function runTests()
 	assert("(+ ((lambda (x y) (* x y)) 2 (- 6)) 6)", NumVal(-6), "14. Binop check double parameters negative 2")
 	expectLispError("((lambda (x 1) (* x 1)) 2)", "15. Simple double parameters type checking")
 	assert("(lambda () a)", TransInt.ClosureVal(Symbol[], TransInt.VarRefNode(:a), TransInt.EmptyEnv()), "16. Basic lambda")
+
+	display("---------------- And tests -------------------")
+	assert("(and 1 2)", NumVal(1), "1. Basic and")
+	assert("(and 1 2 3)", NumVal(1), "2. Basic and, multiple arguments")
+	assert("(and 1 2 3 4 5 6 7 8)", NumVal(1), "3. Basic and, tons of arguments")
+	assert("(and 1 0)", NumVal(0), "4. Basic and 0")
+	expectLispError("(and (lambda () 1) 2)", "5. Closureval checking with and")
+	assert("(and 1 2 3 0 5)", NumVal(0), "6. Basic and 0, multiple parameters")
+	assert("(and (+ 1 2 3 4) (+ (- 1 2) (+ 1 0) (- 1 2) (+ 1 0)) 5)", NumVal(0), "7. Basic and 0, binops")
+
 
 	expectLispError("()", "Null array")
 
