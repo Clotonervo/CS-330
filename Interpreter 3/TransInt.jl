@@ -246,7 +246,7 @@ function parse( expr::Array{Any} )
 			end
 			return AndNode(args)
 		else
-			throw(LispError("Invalid number of arguments for $operator"))
+			throw(LispError("Invalid number of arguments for $(expr[1])"))
 		end
 	else
 		return FuncAppNode( parse( expr[1] ), lambdaParser( expr ) )
@@ -357,7 +357,7 @@ function plusHelper( ast::Array{AE}, index::Int64)
 end
 
 function analyze( ast::AndNode )
-	return If0Node(analyze(ast.args[1]), NumNode(0), andHelper(ast.args, 1))
+	return If0Node(analyze(ast.args[1]), NumNode(0), andHelper(ast.args, 2))
 end
 
 function andHelper( ast::Array{AE}, index::Int64)
@@ -563,6 +563,7 @@ function interp( cs::AbstractString )
     lxd = Lexer.lex( cs )
     ast = parse( lxd )
     revised_ast = analyze(ast)
+	display(revised_ast)
     return calc( revised_ast, EmptyEnv() )
 end
 
