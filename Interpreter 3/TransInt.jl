@@ -371,24 +371,12 @@ end
 
 function analyze( ast::UnaryNode )
     anum = analyze( ast.num )
-    if typeof(anum) == NumNode && anum.n > 0
-        return NumNode( ast.op(anum.n) )
-    end
-
     return UnaryNode( ast.op, anum )
 end
 
 function analyze(ast::BinopNode)
 	    alhs = analyze( ast.lhs )
 	    arhs = analyze( ast.rhs )
-
-		if typeof(alhs) == NumNode && typeof(arhs) == NumNode
-			if ((ast.op == /) && (arhs.n == 0))
-				throw(LispError("Can't divide by 0!"))
-			end
-	        return NumNode( ast.op(alhs.n, arhs.n) )
-		end
-
 		return BinopNode(ast.op, alhs, arhs)
 end
 
@@ -400,22 +388,13 @@ function analyze( ast::WithNode )
 		push!(withSymbols, ast.expr[i].ref_node.sym)
 		push!(withArgs, analyze(ast.expr[i].binding_expr))
 	end
-	# display(ast.body)
-    # transform from a with expression to application of a function
+
      fdn = FuncDefNode( withSymbols, analyze( ast.body ) )
      return FuncAppNode( fdn, withArgs )
 end
 
 function analyze( ast::If0Node )
     acond = analyze( ast.cond )
-
-    if typeof( acond ) == NumNode
-        if acond.n == 0
-            return analyze( ast.zerobranch )
-        else
-            return analyze( ast.nzerobranch )
-        end
-    end
 
     azb = analyze( ast.zerobranch )
     anzb = analyze( ast.nzerobranch )
