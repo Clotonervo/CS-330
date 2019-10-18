@@ -563,7 +563,6 @@ function interp( cs::AbstractString )
     lxd = Lexer.lex( cs )
     ast = parse( lxd )
     revised_ast = analyze(ast)
-	display(revised_ast)
     return calc( revised_ast, EmptyEnv() )
 end
 
