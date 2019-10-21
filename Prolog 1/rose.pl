@@ -6,7 +6,7 @@ rose('Mountain Bloom').
 rose('Pink Paradise').
 rose('Sweet Dreams').
 
-event('anniversary party').
+event('anniversary').
 event('charity auction').
 event('retirement').
 event('senior prom').
@@ -63,7 +63,7 @@ solve :-
      \+ member(['Hugh', _, 'wedding', _], Quad),
 
      % 3.
-     member([_, _, 'anniversary party', 'streamers'], Quad),
+     member([_, _, 'anniversary', 'streamers'], Quad),
      member([_, _, 'wedding', 'balloons'], Quad),
 
      % 4.

@@ -3,7 +3,7 @@
 teacher('Ms.Appleton').
 teacher('Ms.Gross').
 teacher('Mr.Knight').
-teacher('Mr.McEnvoy').
+teacher('Mr.McEvoy').
 teacher('Ms.Parnell').
 
 activity('antiquing').
@@ -29,31 +29,31 @@ solve :-
 activity(AppletonAct),
 activity(GrossAct),
 activity(KnightAct),
-activity(McEnvoyAct),
+activity(McEvoyAct),
 activity(ParnellAct),
-all_different([AppletonAct, GrossAct, KnightAct, McEnvoyAct, ParnellAct]),
+all_different([AppletonAct, GrossAct, KnightAct, McEvoyAct, ParnellAct]),
 
 
 subject(AppletonSub),
 subject(GrossSub),
 subject(KnightSub),
-subject(McEnvoySub),
+subject(McEvoySub),
 subject(ParnellSub),
-all_different([AppletonSub, GrossSub, KnightSub, McEnvoySub, ParnellSub]),
+all_different([AppletonSub, GrossSub, KnightSub, McEvoySub, ParnellSub]),
 
 
 region(AppletonReg),
 region(GrossReg),
 region(KnightReg),
-region(McEnvoyReg),
+region(McEvoyReg),
 region(ParnellReg),
-all_different([AppletonReg, GrossReg, KnightReg, McEnvoyReg, ParnellReg]),
+all_different([AppletonReg, GrossReg, KnightReg, McEvoyReg, ParnellReg]),
 
 
 Quad = [ ['Ms.Appleton', AppletonAct, AppletonSub, AppletonReg],
              ['Ms.Gross', GrossAct, GrossSub, GrossReg],
              ['Mr.Knight', KnightAct, KnightSub, KnightReg],
-             ['Mr.McEnvoy', McEnvoyAct, McEnvoySub, McEnvoyReg],
+             ['Mr.McEvoy', McEvoyAct, McEvoySub, McEvoyReg],
              ['Ms.Parnell', ParnellAct, ParnellSub, ParnellReg] ],
 
 % 1.
@@ -61,27 +61,29 @@ Quad = [ ['Ms.Appleton', AppletonAct, AppletonSub, AppletonReg],
 ( member(['Ms.Gross', _, 'math', _], Quad);
 	member(['Ms.Gross', _, 'science', _], Quad) ),
 
-( member(['Ms.Gross', 'antiquing', _, 'Florida'], Quad);
-	(member(['Ms.Gross', _, _, 'California'], Quad),
-		\+ member(['Ms.Gross', 'antiquing', _, 'Florida'], Quad) ) ) ,
+( member(['Ms.Gross', 'antiquing', _, _], Quad) -> ( member(['Ms.Gross', _, _,'Florida'], Quad) );
+     member(['Ms.Gross', _, _, 'California'], Quad) ),
 
 
-% 2. DONE!
+% 2.
 
-( member([_, 'water-skiing', 'science', 'California'], Quad);
-	member([_, 'water-skiing', 'science', 'Florida'], Quad) ),
+member([_, 'water-skiing', 'science', _], Quad),
 
-( member(['Mr.McEnvoy', _, 'history', 'Maine'], Quad);
-	member(['Mr.McEnvoy', _, 'history', 'Oregon'], Quad) ),
+( member([_, _, 'science', 'California'], Quad);
+	member([_, _, 'science', 'Florida'], Quad) ),
+
+( member(['Mr.McEvoy', _, 'history', 'Maine'], Quad);
+	member(['Mr.McEvoy', _, 'history', 'Oregon'], Quad) ),
 
 % 3.
 
-member(['Ms.Parnell', 'spelunking', _, _], Quad),
 
-( ( member([_, _, 'english', 'Virginia'], Quad),
-	member(['Ms.Appleton', _, _, _], Quad) );
-	(\+ member([_, _, 'english', 'Virginia'], Quad),
-	member(['Ms.Parnell', _, _, _], Quad) ) ),
+
+( member([_, _, 'english', 'Virginia'], Quad) ->
+	( member(['Ms.Appleton', _, _, 'Virginia'], Quad) );
+        member(['Ms.Parnell', _, _, 'Virginia'], Quad) ),
+
+member(['Ms.Parnell', 'spelunking', _, _], Quad),
 
 
 % 4.
@@ -91,18 +93,21 @@ member(['Ms.Parnell', 'spelunking', _, _], Quad),
 
 
 % 5.
-
-\+ member(['Ms.Gross', 'camping', _, _], Quad),
+( member(['Ms.Parnell', 'camping', _, _], Quad);
+member(['Ms.Appleton', 'camping', _, _], Quad) ),
 
 ( member(['Ms.Gross', 'antiquing', _, _], Quad);
   member(['Ms.Appleton', 'antiquing', _, _], Quad);
   member(['Ms.Parnell', 'antiquing', _, _], Quad) ),
 
+\+ member(['Mr.Knight', 'antiquing', _, _], Quad),
+\+ member(['Mr.McEvoy', 'antiquing', _, _], Quad),
+
 
 tell('Ms.Appleton', AppletonAct, AppletonSub, AppletonReg),
 tell('Ms.Gross', GrossAct, GrossSub, GrossReg),
 tell('Mr.Knight', KnightAct, KnightSub, KnightReg),
-tell('Mr.McEnvoy', McEnvoyAct, McEnvoySub, McEnvoyReg),
+tell('Mr.McEvoy', McEvoyAct, McEvoySub, McEvoyReg),
 tell('Ms.Parnell', ParnellAct, ParnellSub, ParnellReg).
 
 all_different([H | T]) :- member(H, T), !, fail.
