@@ -102,11 +102,25 @@ getCube(Board, Number, AsList) :-
 % After calling `solve` on a board, the board should be fully
 % instantiated with a satisfying Sudoku solution.
 
-checkSquare(Square, Row, Col, Cube) :- (nonvar(Square); var(Square), digit(Square), is_set(Row), is_set(Col), is_set(Cube)).
+checkSquare(_, _, _, 8, 9).
+checkSquare(Cubes, Rows, Cols, RowIndex, 9) :-
+	RowIndex1 is RowIndex + 1,
+	checkSquare(Cubes, Rows, Cols, RowIndex1, 0).
+
+checkSquare(Cubes, Rows, Cols, RowIndex, ColIndex) :-
+	nth0(RowIndex, Rows, Row),
+	nth0(ColIndex, Cols, Column),
+	cubeNum(RowIndex, ColIndex, CubeIndex),
+	nth0(RowIndex, Column, Square),
+	nth0(ColIndex, Row, Square),
+	nth0(CubeIndex, Cubes, Cube),
+	(nonvar(Square); var(Square), digit(Square), is_set(Row), is_set(Column), is_set(Cube)),
+		ColIndex1 is ColIndex + 1,
+	checkSquare(Cubes, Rows, Cols, RowIndex, ColIndex1).
 
 
 
-solve(Board) :- true.  % ---PUT CODE HERE---
+solve(Board) :-
 
 	columnAsList(Board, 0, Col_0),
 	columnAsList(Board, 1, Col_1),
@@ -130,7 +144,9 @@ solve(Board) :- true.  % ---PUT CODE HERE---
 	getCube(Board, 8, Cube_8),
 	Cubes = [Cube_0, Cube_1, Cube_2, Cube_3, Cube_4, Cube_5, Cube_6, Cube_7, Cube_8],
 
-	Rows = Board.
+	Rows = Board,
+
+	checkSquare(Cubes, Rows, Cols, 0, 0).
 
 
 
