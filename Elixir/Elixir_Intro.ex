@@ -1,3 +1,5 @@
+# iex -r myElixirFile.exs
+
 defmodule Elixir_Intro do
 
 #------------------------------- fib(n)
@@ -48,7 +50,8 @@ defmodule Elixir_Intro do
         []
     end
 
-#------------------------------- calcTotals(inventory) ************************** Check this with TAs
+#------------------------------- calcTotals(inventory)
+#******************************************************************************************** Check this with TAs
 # Elixir_Intro.calcTotals([{:apple, 3, 2}, {:pear, 5, 1}, {:pumpkin, 1, 10}])
 
     def calcTotals(inventory) do
@@ -67,7 +70,15 @@ defmodule Elixir_Intro do
 
 #------------------------------- map(function,vals)
     def map(function, vals) do
+        mapHelper(function, vals)
+    end
 
+    def mapHelper(function, [head | tail]) do
+        [ function.(head) | mapHelper(function, tail)]
+    end
+
+    def mapHelper(_function, []) do
+        []
     end
 
 
