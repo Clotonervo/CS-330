@@ -100,7 +100,6 @@ defmodule Elixir_Intro do
 			editedList = List.delete_at(list, pivotIndex)
 			{upper, lower} = Enum.split_with(editedList, &(&1 < pivot))
 			quickSort(upper) ++ [pivot] ++ quickSort(lower)
-
 		end
 
 end
