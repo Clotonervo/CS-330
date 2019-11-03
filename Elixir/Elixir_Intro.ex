@@ -83,8 +83,26 @@ defmodule Elixir_Intro do
 
 
 #------------------------------- quickSortServer()
+    def quickSortServer([]) do
+        []
+    end
+
     def quickSortServer() do
 
     end
 
+end
+
+#------------------------------- Client
+defmodule Client do
+    def callServer(pid,nums) do
+        send(pid, {nums, self()})
+	listen()
+    end
+
+    def listen do
+        receive do
+	    {sorted, pid} -> sorted
+	end
+    end
 end
