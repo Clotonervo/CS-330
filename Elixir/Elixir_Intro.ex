@@ -95,6 +95,7 @@ defmodule Elixir_Intro do
 		end
 
 		def quickSort(list) do
+			pivot = :rand.uniform(0..(length(list) - 1))
 		end
 
 end
