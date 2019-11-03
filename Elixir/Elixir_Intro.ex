@@ -95,12 +95,18 @@ defmodule Elixir_Intro do
 		end
 
 		def quickSort(list) do
-			pivot = :rand.uniform(0..(length(list) - 1))
+			pivotIndex = :random.uniform(length(list)) - 1
+			pivot = Enum.at(list, pivotIndex)
+			editedList = List.delete_at(list, pivotIndex)
+			{upper, lower} = Enum.split_with(editedList, &(&1 < pivot))
+			quickSort(upper) ++ [pivot] ++ quickSort(lower)
+
 		end
 
 end
 
 #------------------------------- Client
+# Client.callServer(spawn(&Elixir_Intro.quickSortServer/0),[5,4,3,2,1])
 defmodule Client do
     def callServer(pid,nums) do
         send(pid, {nums, self()})
@@ -108,8 +114,8 @@ defmodule Client do
     end
 
     def listen do
-        receive do
-	    {sorted, pid} -> sorted
-	end
+      receive do
+	    	{sorted, pid} -> sorted
+			end
     end
 end
