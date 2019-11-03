@@ -83,13 +83,19 @@ defmodule Elixir_Intro do
 
 
 #------------------------------- quickSortServer()
-    def quickSortServer([]) do
-        []
-    end
+		def quickSortServer() do
+			receive do
+				{message, pid} -> send(pid, {quickSort(message), self()})
+			end
+			quickSortServer()
+		end
 
-    def quickSortServer() do
+		def quickSort([]) do
+				[]
+		end
 
-    end
+		def quickSort(list) do
+		end
 
 end
 
