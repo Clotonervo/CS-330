@@ -3,15 +3,10 @@
 defmodule Elixir_Intro do
 
 #------------------------------- fib(n)
+		def fib(0) do 0 end
+		def fib(1) do 1 end
     def fib(n) do
-        case n do
-            0 ->
-                0
-            1 ->
-                1
-            _ ->
-                fibHelper(1, 1, n-2)
-        end
+        fibHelper(1, 1, n-2)
     end
 
     def fibHelper(current_fib, next_fib, n) do
@@ -24,18 +19,21 @@ defmodule Elixir_Intro do
     end
 
 #------------------------------- area(shape, shape_info)
-    def area(shape, shape_info) do
-        case shape do
-            :rectangle ->
-                elem(shape_info, 0) * elem(shape_info, 1)
-            :square ->
-                shape_info * shape_info
-            :circle ->
-                (shape_info * shape_info) * :math.pi
-            :triangle ->
-                elem(shape_info, 0) * elem(shape_info, 1) / 2
-        end
-    end
+		def area(:rectangle, shape_info) do
+				elem(shape_info, 0) * elem(shape_info, 1)
+		end
+
+		def area(:square, shape_info) do
+				shape_info * shape_info
+		end
+
+		def area(:circle, shape_info) do
+				(shape_info * shape_info) * :math.pi
+		end
+
+		def area(:triangle, shape_info) do
+				elem(shape_info, 0) * elem(shape_info, 1) / 2
+		end
 
 #------------------------------- sqrList(nums)
     def sqrList(nums) do
