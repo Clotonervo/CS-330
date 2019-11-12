@@ -1,3 +1,75 @@
+#------------------------------------------ NameServer
+defmodule NameServer do
+  use GenServer
+
+  # Start Helper Functions (Don't Modify)
+  def start_link() do
+    GenServer.start_link(__MODULE__, [], [])
+  end
+
+  def start() do
+    GenServer.start(__MODULE__, [],  [])
+  end
+
+  def register(name_server, name) do
+    GenServer.call(name_server, {:register, name})
+  end
+
+  def register(name_server, name, pid) do
+    GenServer.cast(name_server, {:register, name, pid})
+  end
+
+  def resolve(name_server, name) do
+    GenServer.call(name_server, {:resolve, name})
+  end
+  #End Helper Functions
+
+
+
+  def init(_) do
+    {:ok, Map.new()}
+  end
+
+  def handle_call({:register, name}, {pid, _from}, mymap) do
+    updatedMap = Map.put(mymap, name, pid)
+    {:reply, :ok, updatedMap}
+    #Change the parameter names appropriately
+    #Your code here
+
+  end
+
+  def handle_call({:resolve, name}, _second_thing, mymap) do
+    result = Map.fetch(mymap, name)
+    case result do
+        :error ->
+            {:reply, :error, mymap}
+        {:ok, pid} ->
+            {:reply, pid, map}
+    end
+  end
+
+  def handle_cast({:register, name, pid}, mymap) do
+    updatedMap = Map.put(mymap, name, pid)
+    {:noreply, updatedMap}
+    #Change the parameter names appropriately
+    #Your code here
+  end
+
+
+  def handle_call(request, from, state) do
+    super(request, from, state)
+  end
+
+  def handle_cast(request, state) do
+    super(request, state)
+  end
+
+  def hande_info(_msg, state) do
+    {:noreply, state}
+  end
+end
+
+#------------------------------------------ Database
 defmodule Database do
   use GenServer
 
@@ -41,9 +113,7 @@ defmodule Database do
   end
 end
 
-
-
-
+#------------------------------------------ CustomerService
 defmodule CustomerService do
   use GenServer
 
@@ -86,7 +156,7 @@ defmodule CustomerService do
   end
 end
 
-
+#------------------------------------------ Info
 defmodule Info do
   use GenServer
 
@@ -146,6 +216,7 @@ defmodule Info do
   end
 end
 
+#------------------------------------------ Order
 defmodule Order do
   use GenServer
 
@@ -209,6 +280,7 @@ defmodule Order do
   end
 end
 
+#------------------------------------------ Shipper
 defmodule Shipper do
   use GenServer
 
@@ -269,6 +341,7 @@ defmodule Shipper do
   end
 end
 
+#------------------------------------------ User
 defmodule User do
   use GenServer
 
@@ -330,11 +403,11 @@ defmodule User do
     #checkDepends (none)
     {:noreply, state}
   end
-
 end
 
-defmodule Crasher do
 
+#------------------------------------------ Crasher
+defmodule Crasher do
   def crash(ns, name) do
     IO.puts("Crashing the module...")
     pid = GenServer.call(ns, {:resolve, name})
@@ -344,5 +417,5 @@ defmodule Crasher do
 	Process.exit(pid, :kill)
     end
   end
-  
+
 end
