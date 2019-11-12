@@ -69,6 +69,101 @@ defmodule NameServer do
   end
 end
 
+# defmodule ExampleSuper do
+#   use Supervisor
+#
+#   def start_link(ns) do
+#     Supervisor.start_link(__MODULE__, ns )
+#   end
+#
+#   def init(ns) do
+#     children = [
+#       worker(Database, [ns]),
+#       worker(CustomerService, [ns]),
+#       worker(Info, [ns]),
+#       worker(Shipper, [ns]),
+#       worker(User, [ns]),
+#       worker(Order, [ns])
+#     ]
+#
+#     supervise(children, strategy: :one_for_all)
+#   end
+# end
+
+
+#------ Top -> CustomerService, Database Supervisor (one for one)
+defmodule TopSupervisor do
+  use Supervisor
+
+  def start_link(ns) do
+    Supervisor.start_link(__MODULE__, ns )
+  end
+
+  def init(ns) do
+    children = [
+      worker(DatabaseSupervisor, [ns]),
+      worker(CustomerService, [ns]),
+    ]
+
+    supervise(children, strategy: :one_for_one)
+  end
+end
+
+#------ Database Supervisor -> Database, DatabaseDependenciesSupervisor (rest for one)
+defmodule DatabaseSupervisor do
+  use Supervisor
+
+  def start_link(ns) do
+    Supervisor.start_link(__MODULE__, ns )
+  end
+
+  def init(ns) do
+    children = [
+      worker(Database, [ns]),
+      worker(DatabaseDependenciesSupervisor, [ns]),
+    ]
+
+    supervise(children, strategy: :one_for_all)
+  end
+end
+
+#------ DatabaseDependenciesSupervisor -> Info, Shipper, OrderUserSupervisor (one for one)
+defmodule DatabaseDependenciesSupervisor do
+  use Supervisor
+
+  def start_link(ns) do
+    Supervisor.start_link(__MODULE__, ns )
+  end
+
+  def init(ns) do
+    children = [
+      worker(Info, [ns]),
+      worker(Shipper, [ns]),
+      worker(OrderUserSupervisor, [ns]),
+    ]
+
+    supervise(children, strategy: :one_for_one)
+  end
+end
+
+#------ OrderUser Supervisor -> Order, User (one for all)
+defmodule OrderUserSupervisor do
+  use Supervisor
+
+  def start_link(ns) do
+    Supervisor.start_link(__MODULE__, ns )
+  end
+
+  def init(ns) do
+    children = [
+      worker(User, [ns]),
+      worker(Order, [ns])
+    ]
+
+    supervise(children, strategy: :one_for_all)
+  end
+end
+
 #------------------------------------------ Database
 defmodule Database do
   use GenServer
