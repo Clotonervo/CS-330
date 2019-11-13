@@ -39,12 +39,12 @@ defmodule NameServer do
   end
 
   def handle_call({:resolve, name}, _second_thing, mymap) do
-    result = Map.fetch(mymap, name)
+    result = mymap[name]
     case result do
-        :error ->
+        nil ->
             {:reply, :error, mymap}
-        {:ok, pid} ->
-            {:reply, pid, map}
+        pid ->
+            {:reply, pid, mymap}
     end
   end
 
