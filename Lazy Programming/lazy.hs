@@ -10,17 +10,17 @@ isPrime n = [x | x <- [2..(iSqrt n)], n `mod` x == 0] == []
 iSqrt :: Int-> Int
 iSqrt n = floor(sqrt(fromIntegral n))
 
--- Type Signature
+-- primes
 primes :: [Int]
 primes = [x | x <- [2.. ], isPrime x]
 
 
--- Type Signature
+-- isPrimeFast 
 isPrimeFast :: Int -> Bool
 isPrimeFast 2 = True
 isPrimeFast n = [x | x <- takeWhile(<= iSqrt n) primesFast, n `mod` x == 0] == []
 
--- Type Signature
+-- primesFast
 primesFast :: [Int]
 primesFast = filter isPrimeFast [2.. ]
 
