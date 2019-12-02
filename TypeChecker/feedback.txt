@@ -1,0 +1,32 @@
+        Correct output:
+1. Main.CITypes.BoolType()
+2. Main.CITypes.NumType()
+3. Main.CITypes.NumType()
+4. Error
+5. Main.CITypes.NListType()
+6. Main.CITypes.NumType()
+7. Main.CITypes.FuncType(Main.CITypes.NumType(), Main.CITypes.BoolType())
+8. Error
+9. Main.CITypes.NListType()
+10. Error
+11. Main.CITypes.NumType()
+12. Main.CITypes.NListType()
+
+        Your output:
+1. Main.CITypes.BoolType()
+2. Main.CITypes.NumType()
+3. Main.CITypes.NumType()
+4. Error
+5. Main.CITypes.NListType()
+6. Main.CITypes.NumType()
+7. Main.CITypes.FuncType(Main.CITypes.NumType(), Main.CITypes.BoolType())
+8. Error
+9. Main.CITypes.NListType()
+10. Error
+11. Main.CITypes.NumType()
+12. Main.CITypes.NListType()
+
+        Failed tests:
+
+        Grade:
+12 out of 12
