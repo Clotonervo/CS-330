@@ -1,3 +1,5 @@
+import Data.Array
+import Prelude
 
 -- isPrime ***************************************
 isPrime :: Int -> Bool
@@ -24,11 +26,12 @@ primesFast = filter isPrimeFast [2.. ]
 
 -- lcsLength ********************************************
 lcsLength :: String -> String -> Int
-lcsLength str1 str2 = a  where
-  str1_length = length str1
-  str2_length = length str2
-                   a = array ((1,1),(n,n))
-                        ([((1,j), 1) | j <- [1..n]] ++
-                         [((i,1), 1) | i <- [2..n]] ++
-                         [((i,j), a!(i,j-1) + a!(i-1,j-1) + a!(i-1,j))
-                                     | i <- [2..n], j <- [2..n]])
+lcsLength str1 str2 = a!(length str1,length str2)  where
+    a = array ((0,0), (length str1,length str2))
+      ([((i,0), 0) | i <- [0..length str1]] ++
+      [((0,j), 0) | j <- [0..length str2]] ++
+      [((i,j),
+      if str1!!(i-1) == str2!!(j-1)
+          then (a!(i-1,j-1)) + 1
+          else max (a!(i-1, j)) (a!(i, j-1)))
+          | i <- [1..length str1], j <- [1..length str2]])
